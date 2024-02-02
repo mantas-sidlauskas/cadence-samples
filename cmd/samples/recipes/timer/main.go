@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"sync"
 	"time"
 
 	"github.com/pborman/uuid"
@@ -18,20 +19,31 @@ func startWorkers(h *common.SampleHelper) {
 	workerOptions := worker.Options{
 		MetricsScope: h.WorkerMetricScope,
 		Logger:       h.Logger,
-		MaxConcurrentActivityExecutionSize: 3,
+	}
+	for i := 0; i < len(UUIDS); i++ {
+		go h.StartWorkers(h.Config.DomainName, UUIDS[i], workerOptions)
 	}
 
-	h.StartWorkers(h.Config.DomainName, ApplicationName, workerOptions)
 }
 
 func startWorkflow(h *common.SampleHelper) {
-	workflowOptions := client.StartWorkflowOptions{
-		ID:                              "timer_" + uuid.New(),
-		TaskList:                        ApplicationName,
-		ExecutionStartToCloseTimeout:    time.Minute,
-		DecisionTaskStartToCloseTimeout: time.Minute,
+	wg := sync.WaitGroup{}
+	for i := 0; i < len(UUIDS); i++ {
+
+		workflowOptions := client.StartWorkflowOptions{
+			ID:                              "timer_" + uuid.New(),
+			TaskList:                        UUIDS[i],
+			ExecutionStartToCloseTimeout:    time.Minute,
+			DecisionTaskStartToCloseTimeout: time.Minute,
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			h.StartWorkflow(workflowOptions, sampleTimerWorkflow, time.Minute*5)
+		}()
 	}
-	h.StartWorkflow(workflowOptions, sampleTimerWorkflow, time.Second*3)
+	wg.Wait()
+
 }
 
 func main() {

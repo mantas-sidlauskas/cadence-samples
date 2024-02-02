@@ -63,7 +63,7 @@ func sampleTimerWorkflow(ctx workflow.Context, processingTimeThreshold time.Dura
 func orderProcessingActivity(ctx context.Context) error {
 	logger := activity.GetLogger(ctx)
 	logger.Info("sampleActivity processing started.")
-	timeNeededToProcess := time.Second * time.Duration(rand.Intn(10))
+	timeNeededToProcess := time.Second * time.Duration(rand.Intn(100))
 	time.Sleep(timeNeededToProcess)
 	logger.Info("sampleActivity done.", zap.Duration("duration", timeNeededToProcess))
 	return nil
